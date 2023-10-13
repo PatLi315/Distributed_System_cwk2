@@ -183,5 +183,4 @@ public class Client extends Thread {
             Main.quit(Main.gameId, Main.chess);
         }
     }
-
 }

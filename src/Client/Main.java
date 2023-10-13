@@ -8,39 +8,34 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
+import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Random;
-import java.net.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Main {
-
     public static String username;
     public static int rank;
     public static String ip = "localhost";
     public static int port = 8888;
     public static int gameId;
-
     public static Player opponent = new Player();
     public static BufferedReader in;
     public static BufferedWriter out;
     public static boolean isYourTurn = false;
     public static String chess = "";
-    public static HashMap<String, JButton> buttonMap = new HashMap<>();
+    public static ConcurrentHashMap<String, JButton> buttonMap = new ConcurrentHashMap<>();
     public static Client.Countdown countdown;
     public static JFrame frame;
     public static JTextField textFieldTimer;
     public static JTextField textFieldInput;
-    public static JTextArea textArea;
     public static JTextField textFieldStatus;
-    public static ArrayList<String> messageList = new ArrayList<>();
-
+    public static JTextArea textArea;
+    public static ArrayList<String> msgList = new ArrayList<>();
     public static void main(String[] args) {
         if (args.length != 3) {
-            Random player = new Random();
-            username = "Player" + player.nextInt(10000);
-            System.out.println("args missed, using default port 8888 and random name:" + username);
+            Random r = new Random();
+            username = "player" + r.nextInt(10000);
         } else {
             username = args[0];
             ip = args[1];
@@ -59,8 +54,7 @@ public class Main {
             }
         });
     }
-
-    public void Main() {
+    public Main() {
         initialize();
         Client client = new Client();
         client.start();
@@ -228,52 +222,47 @@ public class Main {
         buttonMap.put("8", btnBoard8);
         buttonMap.put("9", btnBoard9);
     }
-
     public static void connect() {
         try {
-            Socket socket = new Socket (ip, port);
+            Socket socket = new Socket(ip, port);
             out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-    public static void request (String msg) {
+    public static void request(String msg) {
         try {
-            System.out.println("req>> " + msg);
+            System.out.println("req >> " + msg);
             out.write(msg + "\n");
             out.flush();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
-    public static void turn (JButton btnBoard, String pos) {
+    public static void turn(JButton btnBoard, String pos) {
         if (isYourTurn) {
             btnBoard.setText(chess);
             btnBoard.setEnabled(false);
-            textFieldStatus.setText(String.format("RANK%d %s's Turn(%s)", opponent.rank, opponent.name, chess.equals("X") ? "O" : "X"));
-            request(Consts.TURN + Consts.D + gameId + Consts.D + pos);
+            textFieldStatus.setText(String.format("RANK#%d %s's Turn(%s)", opponent.rank, opponent.name, chess.equals("X") ? "O" : "X"));
+            request(Consts.TURN + Consts.D + gameId + Consts.D + chess + Consts.D + pos);
         } else {
-            JOptionPane.showMessageDialog(frame, "Not YOur Turn");
+            JOptionPane.showMessageDialog(frame, "Not Your Turn");
         }
         isYourTurn = false;
         if (countdown != null) {
             countdown.cancelled = true;
         }
     }
-
     public static void setTurn(String chess, String pos) {
         JButton btnBoard = buttonMap.get(pos);
         btnBoard.setText(chess);
         btnBoard.setEnabled(false);
-        textFieldStatus.setText(String.format("RANK%d %s's Turn(%s)", rank, username, chess.equals("X") ? "O" : "X"));
+        textFieldStatus.setText(String.format("RANK#%d %s's Turn(%s)", rank, username, chess.equals("X") ? "O" : "X"));
         isYourTurn = true;
         countdown = new Client.Countdown();
         countdown.start();
     }
-
     public static void pickRandomTurn() {
         for (int i = 1; i <= 9; i++) {
             JButton btnBoard = buttonMap.get(Integer.toString(i));
@@ -283,37 +272,34 @@ public class Main {
             }
         }
     }
-
     public static void quit(int gameId, String chess) {
-        request (Consts.QUIT + Consts.D + gameId + Consts.D + chess);
+        request(Consts.QUIT + Consts.D + gameId + Consts.D + chess);
         System.exit(0);
     }
-
     public static void resetBoard() {
         for (int i = 1; i <= 9; i++) {
             JButton btnBoard = buttonMap.get(Integer.toString(i));
             btnBoard.setText("");
             btnBoard.setEnabled(true);
         }
-        textFieldStatus.setText("Finding Players...");
+        textFieldStatus.setText("Finding player...");
         textArea.setText("");
         isYourTurn = false;
         if (countdown != null) {
             countdown.cancelled = true;
         }
     }
-
     public static void resumeBoard(String x, String o) {
         char[] xs = x.toCharArray();
         char[] os = o.toCharArray();
         for (char i : xs) {
-            System.out.println("X: " + i);
+            System.out.println("x:" + i);
             JButton btnBoard = buttonMap.get(Character.toString(i));
             btnBoard.setText("X");
             btnBoard.setEnabled(false);
         }
         for (char i : os) {
-            System.out.println("O: " + i);
+            System.out.println("o:" + i);
             JButton btnBoard = buttonMap.get(Character.toString(i));
             btnBoard.setText("O");
             btnBoard.setEnabled(false);
@@ -325,23 +311,20 @@ public class Main {
             countdown.start();
         } else {
             isYourTurn = false;
-            textFieldStatus.setText(String.format("RANK%d %s's Turn(%s)", opponent.rank, opponent.name, chess.equals("X") ? "O" : "X"));
-
+            textFieldStatus.setText(String.format("RANK#%d %s's Turn(%s)", opponent.rank, opponent.name, chess.equals("X") ? "O" : "X"));
         }
     }
-
     public static void updateChatArea(String newMsg) {
-        if (messageList.size() == 10) {
-            messageList.remove(0);
-            messageList.add(9, newMsg);
+        if (msgList.size() == 10) {
+            msgList.remove(0);
+            msgList.add(9, newMsg);
         }else{
-            messageList.add(newMsg);
+            msgList.add(newMsg);
         }
         StringBuilder result = new StringBuilder();
-        for (String i : messageList) {
+        for (String i : msgList) {
             result.append(i);
         }
         textArea.setText(result.toString());
     }
 }
-

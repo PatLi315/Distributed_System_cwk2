@@ -4,7 +4,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Main {
-
     public static String ip = "localhost"; // no need to config unless using cloud service like AWS
     public static int port = 8888;
 
@@ -28,5 +27,4 @@ public class Main {
         }
     }
 }
-
 
