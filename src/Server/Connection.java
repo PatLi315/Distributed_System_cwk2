@@ -7,7 +7,7 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import Common.Consts;
+import Common.MsgConsts;
 import Common.Player;
 
 public class Connection extends Thread {
@@ -25,7 +25,7 @@ public class Connection extends Thread {
         public void run() {
             try {
                 while (true) {
-                    out.write(Consts.DEFAULT_RESP + "\n");
+                    out.write(MsgConsts.DEFAULT_RESP.getValue() + "\n");
                     out.flush();
                     Thread.sleep(1000);
                 }
@@ -61,13 +61,13 @@ public class Connection extends Thread {
                     Server.players.put(game.x.name, updatedX);
                     Server.players.put(game.o.name, updatedO);
                     try {
-                        game.x.out.write(Consts.DRAW + "\n");
+                        game.x.out.write(MsgConsts.DRAW + "\n");
                         game.x.out.flush();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                     try {
-                        game.o.out.write(Consts.DRAW + "\n");
+                        game.o.out.write(MsgConsts.DRAW + "\n");
                         game.o.out.flush();
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -93,11 +93,11 @@ public class Connection extends Thread {
             for (input = in.readLine(); input != null; input = in.readLine()) {
                 System.out.println("req >>" + input);
                 // <CMD>#<PARAMS#SPLIT#WITH#DELIMITER>
-                String[] parsed = input.split(Consts.D);
-                switch (parsed[0]) {
-                    case Consts.DEFAULT_RESP:
-                        break;
-                    case Consts.NEW_PLAYER:
+                String[] parsed = input.split(MsgConsts.AT.getValue());
+                switch (MsgConsts.fromString(parsed[0])) {
+                    case DEFAULT_RESP -> {
+                    }
+                    case NEW_PLAYER -> {
                         System.out.println("Games: " + Server.games.size());
                         game = null;
                         for (Map.Entry<Integer, GameInfo> g : Server.games.entrySet()) {
@@ -119,35 +119,35 @@ public class Connection extends Thread {
                             }
                             if (Server.waitingPool.isEmpty()) {
                                 Server.waitingPool.add(player);
-                                sendMessage(out, Consts.DEFAULT_RESP);
+                                sendMessage(out, MsgConsts.DEFAULT_RESP.getValue());
                                 System.out.println("New waiter added: " + player.name);
-                            } else{
+                            } else {
                                 Player opponent = Server.waitingPool.remove(0);
                                 if (random.nextBoolean()) {
                                     // player first
                                     int gameId = Server.generateGameId();
-                                    sendMessage(opponent.out, Consts.NEW_GAME + Consts.D + gameId + Consts.D
-                                            + opponent.rank + Consts.D + player.name + Consts.D + player.rank + Consts.D + "O");
+                                    sendMessage(opponent.out, MsgConsts.NEW_GAME.getValue() + MsgConsts.AT.getValue() + gameId + MsgConsts.AT.getValue()
+                                            + opponent.rank + MsgConsts.AT.getValue() + player.name + MsgConsts.AT.getValue() + player.rank + MsgConsts.AT.getValue() + "O");
                                     GameInfo newGame = new GameInfo(gameId, player, opponent);
                                     Server.games.put(gameId, newGame);
-                                    sendMessage(out, Consts.NEW_GAME + Consts.D + gameId + Consts.D
-                                            + player.rank + Consts.D + opponent.name + Consts.D + opponent.rank + Consts.D + "X");
+                                    sendMessage(out, MsgConsts.NEW_GAME.getValue() + MsgConsts.AT.getValue() + gameId + MsgConsts.AT.getValue()
+                                            + player.rank + MsgConsts.AT.getValue() + opponent.name + MsgConsts.AT.getValue() + opponent.rank + MsgConsts.AT.getValue() + "X");
                                 } else {
                                     // opponent first
                                     int gameId = Server.generateGameId();
-                                    sendMessage(opponent.out, Consts.NEW_GAME + Consts.D + gameId + Consts.D
-                                            + opponent.rank + Consts.D + player.name + Consts.D + player.rank + Consts.D + "X");
+                                    sendMessage(opponent.out, MsgConsts.NEW_GAME.getValue() + MsgConsts.AT.getValue() + gameId + MsgConsts.AT.getValue()
+                                            + opponent.rank + MsgConsts.AT.getValue() + player.name + MsgConsts.AT.getValue() + player.rank + MsgConsts.AT.getValue() + "X");
                                     GameInfo newGame = new GameInfo(gameId, opponent, player);
                                     Server.games.put(gameId, newGame);
-                                    sendMessage(out, Consts.NEW_GAME + Consts.D + gameId + Consts.D + player.rank
-                                            + Consts.D + opponent.name + Consts.D + opponent.rank + Consts.D + "O");
+                                    sendMessage(out, MsgConsts.NEW_GAME.getValue() + MsgConsts.AT.getValue() + gameId + MsgConsts.AT.getValue() + player.rank
+                                            + MsgConsts.AT.getValue() + opponent.name + MsgConsts.AT.getValue() + opponent.rank + MsgConsts.AT.getValue() + "O");
                                 }
                                 System.out.println(opponent.name);
                             }
                         } else {
                             // game is not null, which means there's an ongoing game that should be resumed
                             System.out.println("resume " + game.x + game.o + " " + game.gameId);
-                            sendMessage(out, Consts.DEFAULT_RESP);
+                            sendMessage(out, MsgConsts.DEFAULT_RESP.getValue());
 
                             Player player, opponent;
                             String chess;
@@ -169,23 +169,24 @@ public class Connection extends Thread {
                                 Server.games.put(game.gameId, updatedInfo);
                             }
 
-                            sendMessage(out, Consts.RESUME + Consts.D + game.gameId + Consts.D + player.rank + Consts.D + opponent.name +
-                                    Consts.D + opponent.rank + Consts.D + chess + Consts.D + game.getPos("X") + Consts.D + game.getPos("O"));
+                            sendMessage(out, MsgConsts.RESUME.getValue() + MsgConsts.AT.getValue() + game.gameId + MsgConsts.AT.getValue() + player.rank + MsgConsts.AT.getValue() + opponent.name +
+                                    MsgConsts.AT.getValue() + opponent.rank + MsgConsts.AT.getValue() + chess + MsgConsts.AT.getValue() + game.getPos("X") + MsgConsts.AT + game.getPos("O"));
                         }
                         HeartBeat heartBeat = new HeartBeat();
                         heartBeat.start();
-                        break;
-                    case Consts.TURN:
+                    }
+                    case TURN -> {
                         game = Server.games.get(Integer.parseInt(parsed[1]));
                         boolean isX = parsed[2].equals("X");
                         boolean isGameOver = game.updateBoard(parsed[2], parsed[3]);
-
                         if (isX) {
-                            sendMessage(game.x.out, Consts.DEFAULT_RESP);
-                            sendMessage(game.o.out, Consts.TURN + Consts.D + parsed[2] + Consts.D + parsed[3]);
+                            sendMessage(game.x.out, MsgConsts.DEFAULT_RESP.getValue());
+                            sendMessage(game.o.out, MsgConsts.TURN.getValue() + MsgConsts.AT.getValue() +
+                                    parsed[2] + MsgConsts.AT.getValue() + parsed[3]);
                         } else {
-                            sendMessage(game.o.out, Consts.DEFAULT_RESP);
-                            sendMessage(game.x.out, Consts.TURN + Consts.D + parsed[2] + Consts.D + parsed[3]);
+                            sendMessage(game.o.out, MsgConsts.DEFAULT_RESP.getValue());
+                            sendMessage(game.x.out, MsgConsts.TURN.getValue() + MsgConsts.AT.getValue() +
+                                    parsed[2] + MsgConsts.AT.getValue() + parsed[3]);
                         }
                         if (isGameOver) {
                             Player updatedX = Server.players.get(game.x.name);
@@ -193,19 +194,19 @@ public class Connection extends Thread {
                             if (game.remainedTurns == 0) {
                                 updatedX.rank += 2;
                                 updatedO.rank += 2;
-                                sendMessage(game.o.out, Consts.GAME_OVER + Consts.D + "Nobody");
-                                sendMessage(game.x.out, Consts.GAME_OVER + Consts.D + "Nobody");
+                                sendMessage(game.o.out, MsgConsts.GAME_OVER.getValue() + MsgConsts.AT.getValue() + "Nobody");
+                                sendMessage(game.x.out, MsgConsts.GAME_OVER.getValue() + MsgConsts.AT.getValue() + "Nobody");
                             } else {
                                 if (isX) {
                                     updatedX.rank += 5;
                                     updatedO.rank = Math.max(updatedO.rank - 5, 0);
-                                    sendMessage(game.x.out, Consts.GAME_OVER + Consts.D + game.x.name);
-                                    sendMessage(game.o.out, Consts.GAME_OVER + Consts.D + game.x.name);
+                                    sendMessage(game.x.out, MsgConsts.GAME_OVER.getValue() + MsgConsts.AT.getValue() + game.x.name);
+                                    sendMessage(game.o.out, MsgConsts.GAME_OVER.getValue() + MsgConsts.AT.getValue() + game.x.name);
                                 } else {
                                     updatedO.rank += 5;
                                     updatedX.rank = Math.max(updatedX.rank - 5, 0);
-                                    sendMessage(game.x.out, Consts.GAME_OVER + Consts.D + game.o.name);
-                                    sendMessage(game.o.out, Consts.GAME_OVER + Consts.D + game.o.name);
+                                    sendMessage(game.x.out, MsgConsts.GAME_OVER.getValue() + MsgConsts.AT.getValue() + game.o.name);
+                                    sendMessage(game.o.out, MsgConsts.GAME_OVER.getValue() + MsgConsts.AT.getValue() + game.o.name);
                                 }
                             }
                             Server.players.put(game.x.name, updatedX);
@@ -213,35 +214,32 @@ public class Connection extends Thread {
                             Server.games.remove(game.gameId);
                             game = null;
                         }
-                        break;
-                    case Consts.CHAT:
+                    }
+                    case CHAT -> {
                         game = Server.games.get(Integer.parseInt(parsed[1]));
-                        String msg = String.format("RANK#%d %s: %s", Integer.parseInt(parsed[2]), parsed[3], parsed[4]);
-                        sendMessage(game.x.out, Consts.CHAT + Consts.D + msg);
-                        sendMessage(game.o.out, Consts.CHAT + Consts.D + msg);
-                        break;
-                    case Consts.QUIT:
+                        String msg = String.format("%s: %s", parsed[3], parsed[4]);
+                        sendMessage(game.x.out, MsgConsts.CHAT.getValue() + MsgConsts.AT.getValue() + msg);
+                        sendMessage(game.o.out, MsgConsts.CHAT.getValue() + MsgConsts.AT.getValue() + msg);
+                    }
+                    case QUIT -> {
                         Player updatedX = Server.players.get(game.x.name);
                         Player updatedO = Server.players.get(game.o.name);
                         game = Server.games.get(Integer.parseInt(parsed[1]));
                         if (parsed[2].equals("X")) {
                             updatedO.rank += 5;
                             updatedX.rank = Math.max(updatedX.rank - 5, 0);
-                            sendMessage(game.o.out, Consts.GAME_OVER + Consts.D + game.o.name);
+                            sendMessage(game.o.out, MsgConsts.GAME_OVER.getValue() + MsgConsts.AT.getValue() + game.o.name);
                         } else {
                             updatedX.rank += 5;
                             updatedO.rank = Math.max(updatedO.rank - 5, 0);
-                            sendMessage(game.x.out, Consts.GAME_OVER + Consts.D + game.x.name);
+                            sendMessage(game.x.out, MsgConsts.GAME_OVER.getValue() + MsgConsts.AT.getValue() + game.x.name);
                         }
                         Server.players.put(game.x.name, updatedX);
                         Server.players.put(game.o.name, updatedO);
                         Server.games.remove(game.gameId);
                         game = null;
-                        break;
-                    default:
-                        sendMessage(out, Consts.DEFAULT_RESP);
-                        break;
-
+                    }
+                    default -> sendMessage(out, MsgConsts.DEFAULT_RESP.getValue());
                 }
             }
         } catch (IOException e) {
